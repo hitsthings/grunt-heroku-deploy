@@ -1,0 +1,41 @@
+{
+  "name": "grunt-heroku-deploy",
+  "description": "Task to switch to a deploy branch and push to heroku",
+  "version": "0.1.0",
+  "homepage": "https://github.com/hitsthings/grunt-heroku-deploy",
+  "author": {
+    "name": "Adam Ahmed",
+    "email": "hitsthings@gmail.com",
+    "url": "http://www.noiregrets.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/hitsthings/grunt-heroku-deploy.git"
+  },
+  "bugs": {
+    "url": "https://github.com/hitsthings/grunt-heroku-deploy/issues"
+  },
+  "licenses": [
+    {
+      "type": "MIT",
+      "url": "https://github.com/hitsthings/grunt-heroku-deploy/blob/master/LICENSE-MIT"
+    }
+  ],
+  "main": "grunt.js",
+  "bin": "bin/grunt-heroku-deploy",
+  "engines": {
+    "node": "*"
+  },
+  "scripts": {
+    "test": "grunt test"
+  },
+  "dependencies": {
+    "grunt": "~0.3.9"
+  },
+  "devDependencies": {
+    "grunt": "~0.3.9"
+  },
+  "keywords": [
+    "gruntplugin"
+  ]
+}
