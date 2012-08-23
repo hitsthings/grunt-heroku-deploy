@@ -1,3 +1,4 @@
+[![build status](https://secure.travis-ci.org/hitsthings/grunt-heroku-deploy.png)](http://travis-ci.org/hitsthings/grunt-heroku-deploy)
 # grunt-heroku-deploy
 
 Task to switch to a deploy branch and push to heroku
