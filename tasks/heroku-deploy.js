@@ -42,15 +42,13 @@ function getCurrentBranch(next) {
 
     var newline, current, branch;
     if (out[0] === '*') {
-      current = -1;
+      current = 0;
     } else {
-      current = out.indexOf('\n*');
+      current = out.indexOf('\n*') + 1;
+      if (!current) {
+        return next(new Error("Current branch could not be determined."));
+      }
     }
-    if (!~current) {
-      return next(new Error("Current branch could not be determined."));
-    }
-
-    current++;
 
     newline = out.indexOf('\n', current);
     branch = out.substring(current + 2, ~newline ?  newline : undefined);
@@ -75,11 +73,17 @@ module.exports = function(grunt) {
   // ==========================================================================
 
   grunt.registerMultiTask('heroku-deploy', 'Switch to the deploy branch, merge your starting location, push, and switch back', function() {
+    var next = this.async();
     grunt.log.write(
       grunt.helper(
         'heroku-deploy',
         grunt.config(['heroku-deploy', this.target, 'deployBranch']),
-        this.async()
+        function(err) {
+          if (err) {
+            throw err;
+          }
+          next();
+        }
       )
     );
   });
