@@ -1,7 +1,7 @@
 {
   "name": "grunt-heroku-deploy",
   "description": "Task to switch to a deploy branch and push to heroku",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "homepage": "https://github.com/hitsthings/grunt-heroku-deploy",
   "author": {
     "name": "Adam Ahmed",
