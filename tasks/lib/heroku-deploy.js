@@ -22,7 +22,21 @@ function allOutput(proc, next) {
  });
 }
 
-function doDeploy(originRef, deployRef, next) {
+function makeReleaseTag(opts,next){
+  pipeAll(spawn('git',['tag',opts.tag])).on('exit',function(){
+    if(!opts.push) return next();
+    pipeAll(spawn('git',['push',opts.origin,opts.tag])).on('exit',function(){
+      next();
+    });
+  });
+}
+
+function doDeploy(originRef, deployRef, tagOpts, next) {
+ if(typeof tagOpts !== 'function'){
+   return makeReleaseTag(tagOpts,doDeploy.bind(null,originRef,deployRef,next))
+ } else {
+   next = tagOpts
+ }
  pipeAll(spawn('git', ['checkout', deployRef])).on('exit', function() {
    pipeAll(spawn('git', ['merge', originRef])).on('exit', function() {
      pipeAll(spawn('git', ['push'])).on('exit', function() {
@@ -66,8 +80,12 @@ function getCurrentCommitHash(next) {
 exports.init = function(grunt){
   var exports = {};
   
-  exports['deploy'] = function(deployBranch, next){
-    deployBranch = deployBranch || 'deploy';
+  exports['deploy'] = function(options, next){
+    var options = options || {}
+    var deployArgs = options.deployTag
+        ? [options.deployTag,{tag : options.deployTag, push : options.pushTag, origin : options.origin || "origin"}]
+        : [options.deployBranch || "deploy"];
+    deployArgs.push(next)
 
     getCurrentBranch(function(err, branch) {
       if (err) {
@@ -83,11 +101,13 @@ exports.init = function(grunt){
           }
 
           console.log('Using ' + csid + ' as ref to merge.');
-          doDeploy(csid, deployBranch, next);
+          deployArgs.unshift(csid)
+          doDeploy.apply(null,deployArgs);
         });
       } else {
         console.log('Current branch is ' + branch);
-        doDeploy(branch, deployBranch, next);
+        deployArgs.unshift(branch)
+        doDeploy.apply(null,deployArgs);
       }
     });
   }

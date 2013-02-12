@@ -47,6 +47,27 @@ grunt.initConfig({
 });
 ```
 
+You may also provide a tag if you'd like to automatically create a new tag (and optionally push it up to origin):
+
+```javascript
+grunt.initConfig({
+  pkg: grunt.file.readJSON('package.json'),
+  'heroku-deploy' : {
+      production : {
+          deployTag : 'v<%= pkg.version %>',
+          pushTag : true,
+          origin : 'origin'
+      }
+  }
+})
+```
+This will create a new tag, push it to origin, and deploy that tag to heroku:
+
+    git tag v0.1.1  # create a new tag
+    git push origin v0.1.1 # push the tag to origin (this is skipped if pushTag is missing or false)
+
+Then everything else runs as if it were called with `{deployBranch : 'v0.0.1'}`
+
 ## Contributing
 In lieu of a formal styleguide, take care to maintain the existing coding style. Add unit tests for any new or changed functionality. Lint and test your code using [grunt][grunt].
 
