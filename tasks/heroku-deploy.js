@@ -25,7 +25,7 @@ module.exports = function(grunt) {
     var next = this.async();
     grunt.log.write(
       herokuDeploy['deploy'](
-        grunt.config(['heroku-deploy', this.target, 'deployBranch']),
+        grunt.config(['heroku-deploy', this.target]),
         function(err) {
           if (err) {
             throw err;
