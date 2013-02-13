@@ -5,6 +5,7 @@
  * Copyright (c) 2012 Adam Ahmed
  * Licensed under the MIT license.
  */
+"use strict";
 
 var cp = require('child_process');
 var spawn = cp.spawn;
@@ -25,17 +26,17 @@ function allOutput(proc, next) {
 }
 
 function trim(str){
-  return str.replace(/^\s+/,'').replace(/\s+$/,'')
+  return str.replace(/^\s+/,'').replace(/\s+$/,'');
 }
 
 function tagExists(tag,next){
    exec('git tag | grep ' + tag,function(err,stdout,stderr){
-     if(trim(stdout) == tag){
-       next(true)
+     if(trim(stdout) === tag){
+       next(true);
      } else {
-       next(false)
+       next(false);
      }
-   })
+   });
 }
 
 function makeReleaseTag(opts,next){
@@ -43,10 +44,12 @@ function makeReleaseTag(opts,next){
     if(exists && !opts.force){
       return next(new Error('Error: tag already exists, but forcePush was not specified.'));
     } else if(exists){
-      return next()
+      return next();
     }
     pipeAll(spawn('git',['tag',opts.tag])).on('exit',function(){
-      if(!opts.push) return next();
+      if(!opts.push){
+        return next();
+      }
       pipeAll(spawn('git',['push',opts.origin,opts.tag])).on('exit',function(){
         next();
       });
@@ -58,7 +61,9 @@ function doDeploy(options, tagOpts, next) {
  if(typeof tagOpts !== 'function'){
    return makeReleaseTag(tagOpts,doDeploy.bind(null,options,next));
  } else {
-   if(next instanceof Error) return tagOpts(next);
+   if(next instanceof Error){
+     return tagOpts(next);
+   }
    next = tagOpts;
  }
  var originRef = options.originRef;
@@ -66,14 +71,16 @@ function doDeploy(options, tagOpts, next) {
  var push = function(done){
    var pushArgs = ['push'];
    if(options.deployTag){
-     if(options.forcePush) pushArgs.push('-f');
+     if(options.forcePush){
+       pushArgs.push('-f');
+     }
      pushArgs.push(options.herokuRemote || 'heroku');
      pushArgs.push(options.deployTag+'^{}:master');
    } else if(options.herokuRemote){
      pushArgs.push(options.herokuRemote);
    }
    pipeAll(spawn('git', pushArgs)).on('exit', done);
- }
+ };
  if(options.deployTag){
    push(function(){
      next();
@@ -85,7 +92,7 @@ function doDeploy(options, tagOpts, next) {
          pipeAll(spawn('git', ['checkout', originRef])).on('exit', function() {
            next();
          });
-       })
+       });
      });
    });
   }
@@ -124,22 +131,22 @@ exports.init = function(grunt){
   var exports = {};
   
   exports['deploy'] = function(options, next){
-    var options = options || {}
-    var deployArgs
+    options = options || {};
+    var deployArgs;
     if(options.deployTag){
-      options.deployRef = options.deployTag || "deploy"
-      options.tag = options.deployRef
+      options.deployRef = options.deployTag || "deploy";
+      options.tag = options.deployRef;
       deployArgs = [options,{
         tag : options.deployTag,
         push : options.pushTag,
         origin : options.origin || "origin",
         force : options.forcePush
-      }]
+      }];
     } else {
-      options.deployRef = options.deployBranch || "deploy"
-      deployArgs = [options]
+      options.deployRef = options.deployBranch || "deploy";
+      deployArgs = [options];
     }
-    deployArgs.push(next)
+    deployArgs.push(next);
 
     getCurrentBranch(function(err, branch) {
       if (err) {
@@ -155,16 +162,16 @@ exports.init = function(grunt){
           }
 
           console.log('Using ' + csid + ' as ref to merge.');
-          deployArgs[0].originRef = csid
+          deployArgs[0].originRef = csid;
           doDeploy.apply(null,deployArgs);
         });
       } else {
         console.log('Current branch is ' + branch);
-        deployArgs[0].originRef = branch
+        deployArgs[0].originRef = branch;
         doDeploy.apply(null,deployArgs);
       }
     });
-  }
+  };
   
   return exports;
-}
+};

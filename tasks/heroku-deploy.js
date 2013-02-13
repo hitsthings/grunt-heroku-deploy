@@ -7,6 +7,7 @@
  */
 
 module.exports = function(grunt) {
+  "use strict";
 
   // Please see the grunt documentation for more information regarding task and
   // helper creation: https://github.com/cowboy/grunt/blob/master/docs/toc.md
@@ -15,7 +16,7 @@ module.exports = function(grunt) {
   // INIT
   // ==========================================================================
   
-  var herokuDeploy = require('./lib/heroku-deploy').init(grunt)
+  var herokuDeploy = require('./lib/heroku-deploy').init(grunt);
 
   // ==========================================================================
   // TASKS
