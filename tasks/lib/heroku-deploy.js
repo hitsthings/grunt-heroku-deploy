@@ -31,21 +31,40 @@ function makeReleaseTag(opts,next){
   });
 }
 
-function doDeploy(originRef, deployRef, tagOpts, next) {
+function doDeploy(options, tagOpts, next) {
  if(typeof tagOpts !== 'function'){
-   return makeReleaseTag(tagOpts,doDeploy.bind(null,originRef,deployRef,next))
+   return makeReleaseTag(tagOpts,doDeploy.bind(null,options,next));
  } else {
-   next = tagOpts
+   next = tagOpts;
  }
- pipeAll(spawn('git', ['checkout', deployRef])).on('exit', function() {
-   pipeAll(spawn('git', ['merge', originRef])).on('exit', function() {
-     pipeAll(spawn('git', ['push'])).on('exit', function() {
-       pipeAll(spawn('git', ['checkout', originRef])).on('exit', function() {
-         next();
-       });
+ var originRef = options.originRef;
+ var deployRef = options.deployRef;
+ var push = function(done){
+   var pushArgs = ['push'];
+   if(options.deployTag){
+     pushArgs.push('-f');
+     if(options.herokuRemote) pushArgs.push(options.herokuRemote);
+     pushArgs.push(options.deployTag+'^{}:master');
+   } else if(options.herokuRemote){
+     pushArgs.push(options.herokuRemote);
+   }
+   pipeAll(spawn('git', pushArgs)).on('exit', done);
+ }
+ if(options.deployTag){
+   push(function(){
+     next();
+   });
+ } else {
+   pipeAll(spawn('git', ['checkout', deployRef])).on('exit', function() {
+     pipeAll(spawn('git', ['merge', originRef])).on('exit', function(){
+       push(function(){
+         pipeAll(spawn('git', ['checkout', originRef])).on('exit', function() {
+           next();
+         });
+       })
      });
    });
- });
+  }
 }
 
 function getCurrentBranch(next) {
@@ -82,9 +101,19 @@ exports.init = function(grunt){
   
   exports['deploy'] = function(options, next){
     var options = options || {}
-    var deployArgs = options.deployTag
-        ? [options.deployTag,{tag : options.deployTag, push : options.pushTag, origin : options.origin || "origin"}]
-        : [options.deployBranch || "deploy"];
+    var deployArgs
+    if(options.deployTag){
+      options.deployRef = options.deployTag || "deploy"
+      options.tag = options.deployRef
+      deployArgs = [options,{
+        tag : options.deployTag,
+        push : options.pushTag,
+        origin : options.origin || "origin"
+      }]
+    } else {
+      options.deployRef = options.deployBranch || "deploy"
+      deployArgs = [options]
+    }
     deployArgs.push(next)
 
     getCurrentBranch(function(err, branch) {
@@ -101,12 +130,12 @@ exports.init = function(grunt){
           }
 
           console.log('Using ' + csid + ' as ref to merge.');
-          deployArgs.unshift(csid)
+          deployArgs[0].originRef = csid
           doDeploy.apply(null,deployArgs);
         });
       } else {
         console.log('Current branch is ' + branch);
-        deployArgs.unshift(branch)
+        deployArgs[0].originRef = branch
         doDeploy.apply(null,deployArgs);
       }
     });
