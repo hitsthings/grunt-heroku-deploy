@@ -39,27 +39,27 @@ function tagExists(tag,next){
    });
 }
 
-function makeReleaseTag(opts,next){
+function makeReleaseTag(grunt,opts,next){
   tagExists(opts.tag,function(exists){
     if(exists && !opts.force){
-      return next(new Error('Error: tag already exists, but forcePush was not specified.'));
+      return next(new Error('Error: tag already exists, but force was not specified.'));
     } else if(exists){
       return next();
     }
     pipeAll(spawn('git',['tag',opts.tag])).on('exit',function(){
-      if(!opts.push){
+      if(!opts.pushTagTo || !opts.pushTagTo.length){
         return next();
       }
-      pipeAll(spawn('git',['push',opts.origin,opts.tag])).on('exit',function(){
-        next();
-      });
+      grunt.util.async.forEach(opts.pushTagTo,function(remote,done){
+        pipeAll(spawn('git',['push',remote,opts.tag])).on('exit',done);
+      },next);
     });
   });
 }
 
-function doDeploy(options, tagOpts, next) {
+function doDeploy(grunt, options, tagOpts, next) {
  if(typeof tagOpts !== 'function'){
-   return makeReleaseTag(tagOpts,doDeploy.bind(null,options,next));
+   return makeReleaseTag(grunt,tagOpts,doDeploy.bind(null,grunt,options,next));
  } else {
    if(next instanceof Error){
      return tagOpts(next);
@@ -71,7 +71,7 @@ function doDeploy(options, tagOpts, next) {
  var push = function(done){
    var pushArgs = ['push'];
    if(options.deployTag){
-     if(options.forcePush){
+     if(options.force){
        pushArgs.push('-f');
      }
      pushArgs.push(options.herokuRemote || 'heroku');
@@ -136,15 +136,14 @@ exports.init = function(grunt){
     if(options.deployTag){
       options.deployRef = options.deployTag || "deploy";
       options.tag = options.deployRef;
-      deployArgs = [options,{
+      deployArgs = [grunt,options,{
         tag : options.deployTag,
-        push : options.pushTag,
-        origin : options.origin || "origin",
-        force : options.forcePush
+        pushTagTo : options.pushTagTo,
+        force : options.force
       }];
     } else {
       options.deployRef = options.deployBranch || "deploy";
-      deployArgs = [options];
+      deployArgs = [grunt,options];
     }
     deployArgs.push(next);
 
