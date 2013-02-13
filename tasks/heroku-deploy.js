@@ -28,7 +28,8 @@ module.exports = function(grunt) {
         grunt.config(['heroku-deploy', this.target]),
         function(err) {
           if (err) {
-            throw err;
+            grunt.log.error(err.message);
+            return next(false);
           }
           next();
         }

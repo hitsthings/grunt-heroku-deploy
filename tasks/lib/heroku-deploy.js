@@ -6,7 +6,9 @@
  * Licensed under the MIT license.
  */
 
-var spawn = require('child_process').spawn;
+var cp = require('child_process');
+var spawn = cp.spawn;
+var exec = cp.exec;
 
 function pipeAll(proc) {
  proc.stdout.pipe(process.stdout);
@@ -22,11 +24,32 @@ function allOutput(proc, next) {
  });
 }
 
+function trim(str){
+  return str.replace(/^\s+/,'').replace(/\s+$/,'')
+}
+
+function tagExists(tag,next){
+   exec('git tag | grep ' + tag,function(err,stdout,stderr){
+     if(trim(stdout) == tag){
+       next(true)
+     } else {
+       next(false)
+     }
+   })
+}
+
 function makeReleaseTag(opts,next){
-  pipeAll(spawn('git',['tag',opts.tag])).on('exit',function(){
-    if(!opts.push) return next();
-    pipeAll(spawn('git',['push',opts.origin,opts.tag])).on('exit',function(){
-      next();
+  tagExists(opts.tag,function(exists){
+    if(exists && !opts.force){
+      return next(new Error('Error: tag already exists, but forcePush was not specified.'));
+    } else if(exists){
+      return next()
+    }
+    pipeAll(spawn('git',['tag',opts.tag])).on('exit',function(){
+      if(!opts.push) return next();
+      pipeAll(spawn('git',['push',opts.origin,opts.tag])).on('exit',function(){
+        next();
+      });
     });
   });
 }
@@ -35,6 +58,7 @@ function doDeploy(options, tagOpts, next) {
  if(typeof tagOpts !== 'function'){
    return makeReleaseTag(tagOpts,doDeploy.bind(null,options,next));
  } else {
+   if(next instanceof Error) return tagOpts(next);
    next = tagOpts;
  }
  var originRef = options.originRef;
@@ -42,8 +66,8 @@ function doDeploy(options, tagOpts, next) {
  var push = function(done){
    var pushArgs = ['push'];
    if(options.deployTag){
-     pushArgs.push('-f');
-     if(options.herokuRemote) pushArgs.push(options.herokuRemote);
+     if(options.forcePush) pushArgs.push('-f');
+     pushArgs.push(options.herokuRemote || 'heroku');
      pushArgs.push(options.deployTag+'^{}:master');
    } else if(options.herokuRemote){
      pushArgs.push(options.herokuRemote);
@@ -108,7 +132,8 @@ exports.init = function(grunt){
       deployArgs = [options,{
         tag : options.deployTag,
         push : options.pushTag,
-        origin : options.origin || "origin"
+        origin : options.origin || "origin",
+        force : options.forcePush
       }]
     } else {
       options.deployRef = options.deployBranch || "deploy"
