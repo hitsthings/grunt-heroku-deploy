@@ -47,7 +47,7 @@ grunt.initConfig({
 });
 ```
 
-You may also provide a tag if you'd like to automatically create a new tag (and optionally push it up to origin):
+Alternatively, you can provide a tag name to create a new tag from your current HEAD and optionally push that tag to one or more remotes before pushing to heroku as master:
 
 ```javascript
 grunt.initConfig({
@@ -55,8 +55,9 @@ grunt.initConfig({
   'heroku-deploy' : {
       production : {
           deployTag : 'v<%= pkg.version %>',
-          pushTag : true,
-          origin : 'origin'
+          pushTagTo : ['origin','heroku'],
+          force : false, // default : false
+          herokuRemote : 'heroku' // default : 'heroku'
       }
   }
 })
@@ -64,23 +65,27 @@ grunt.initConfig({
 This will create a new tag, push it to origin, and deploy that tag to heroku:
 
     git tag v0.1.1  # create a new tag
-    git push origin v0.1.1 # push the tag to origin (this is skipped if pushTag is missing or false)
-    git push -f heroku v0.1.1^{}:master
+    git push origin v0.1.1 # push the tag to origins
+    git push heroku v0.1.1 # push the tag to origins
+    git push heroku v0.1.1^{}:master
 
-As this is a tag, it will skip the merge step because the current changes will be present in the tag.
-
-If you would like to specify the name of the heroku remote, you can add it to the options as `herokuRemote`:
+For rollback operations, you can set `force` to true to force a push to heroku, and skip creation of a tag:
 
 ```javascript
 grunt.initConfig({
-	'heroku-deploy' : {
-        production : {
-            deployBranch : 'prod',
-            herokuRemote : 'heroku'
-        }
-    }
+  pkg: grunt.file.readJSON('package.json'),
+  'heroku-deploy' : {
+      production : {
+          deployTag : 'v<%= pkg.version %>',
+          force : true
+      }
+  }
 })
 ```
+This will force push the tag to heroku:
+
+    git push heroku v0.1.1^{}:master
+
 
 ## Contributing
 In lieu of a formal styleguide, take care to maintain the existing coding style. Add unit tests for any new or changed functionality. Lint and test your code using [grunt][grunt].
